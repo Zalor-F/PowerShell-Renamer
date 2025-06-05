@@ -14,8 +14,8 @@
 #>
 
 # Chemins par défaut (à modifier si besoin)
-$pathFilms = "C:\Users\Zalor\Videos\FILMS"
-$pathSeries = "C:\Users\Zalor\Videos\SERIES"
+$pathFilms = "CHEMIN VERS VOS FILMS"
+$pathSeries = "CHEMIN VERS VOS SERIES"
 
 # Liste des patterns à supprimer (insensible à la casse)
 $patternsToRemove = @(
