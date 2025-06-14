@@ -1,4 +1,3 @@
-
 ![Description de l'image](image.png)
 
 # 🚀 PowerShell Renamer
@@ -15,47 +14,55 @@ Ce script vous permet de renommer automatiquement les fichiers de séries et de 
 
 ## 🧾 Configuration initiale
 
-Avant de commencer, vous devez configurer les chemins vers vos dossiers de films et de séries dans le script. Voici comment faire :
+Lors de la première exécution, le script vous demandera les chemins vers vos dossiers de films et de séries.
+Les chemins seront sauvegardés pour les prochaines utilisations dans un fichier `config.json` à côté du script.
 
-1. Ouvrez le script dans un éditeur de texte.
-2. Modifiez les lignes suivantes pour refléter les chemins de vos dossiers :
-
-```powershell
-# Chemins par défaut (à modifier selon vos besoins)
-$pathFilms = "CHEMIN_VERS_VOS_FILMS"
-$pathSeries = "CHEMIN_VERS_VOS_SERIES"
-```
-
-🚨 **Assurez-vous de remplacer ces chemins** par ceux de vos dossiers `FILMS` et `SERIES`. Attention à respecter les noms ou adapte-les dans le script sinon... ça marche pas 🤷‍♂️.
+🚨 **Assurez-vous d'utiliser les bons chemins** vers vos dossiers `FILMS` et `SERIES`. Sinon... ça marche pas 🤷‍♂️.
 
 ---
 
-## 🎮 Comment l’utiliser ?
+## 🎮 Utilisation pas à pas
 
-1. **Ouvrez PowerShell** : Assurez-vous d'avoir les droits nécessaires pour exécuter des scripts.
-2. **Exécutez le script** : Faites un clic droit sur le fichier du script et sélectionnez "Exécuter avec PowerShell", ou exécutez-le via la console PowerShell.
-3. **Choisissez le mode** :
-   - `S` pour **simuler** et voir ce que le script ferait sans appliquer les changements.
-   - `T` pour **renommer** réellement les fichiers.
-4. **Validez ou non les changement** : Vous pouvez choisir de valider automatiquement.
+1. **Ouvrez PowerShell**, avec les droits administrateurs si nécessaire.
+2. **Placez-vous dans le dossier contenant le script** à l’aide de la commande suivante (remplace le chemin par le tien) :
+   ```powershell
+   cd "C:\chemin\vers\le\script"
+   ```
+3. **Lancez le script** :
+   ```powershell
+   .\PowerShell-Renamer.ps1
+   ```
+4. **Saisissez les chemins** de vos dossiers Films et Séries quand demandé (à faire une seule fois si vous les enregistrez).
+5. **Utilisez le menu** pour choisir une option :
 
-Si vous avez choisi la **simulation**, vous verrez une liste des changements proposés sans qu'aucun fichier ne soit réellement modifié.
+   - `1` → Simuler renommage des **Films**
+   - `2` → Simuler renommage des **Séries**
+   - `3` → Simuler renommage des **Films et Séries**
+   - `4` → **Valider** et **renommer** les fichiers
+   - `Q` → Quitter
 
 ---
 
-## 📦 Fonctionnalités à venir
+## 📦 Fonctionnalités
 
-## 📦 À venir (ou pas 😅)
+- Détection et nettoyage automatique des noms de fichiers vidéo (films et séries).
+- Simulation sans modification pour tout vérifier avant.
+- Confirmation pour chaque fichier ou validation en masse.
+- Sauvegarde automatique des chemins configurés.
 
-- Interface graphique avec des licornes.
-- Fusion auto avec Jellyfin.
-- Téléportation de fichiers (on y travaille).
+---
+
+## 🦄🚧 Fonctionnalités à venir (ou pas 😅)
+
+- Interface graphique avec des licornes🦄🦄.
+- Fusion comme dans DBZ.
+- Distributeur de café.
 
 ---
 
 ## 🤝 Contribution
 
-Les contributions sont les bienvenues ! Si vous avez des suggestions ou des améliorations, n'hésitez pas
+Les contributions sont les bienvenues ! Si vous avez des suggestions ou des améliorations, n'hésitez pas.
 
 ---
 

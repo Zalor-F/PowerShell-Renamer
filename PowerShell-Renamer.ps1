@@ -1,6 +1,6 @@
 <#
 ###############################################################################
-# Script PowerShell de nettoyage de noms de fichiers vidéo (films et séries)
+# Script PowerShell v3 : Nettoyage et renommage fichiers Films et Séries
 # - Supprime tout ce qui est entre crochets [ ... ]
 # - Nettoie les tags inutiles (MULTi, 1080p, x264, etc.)
 # - Conserve uniquement le nom du film suivi de l'année et de l'extension
@@ -13,255 +13,172 @@
 ###############################################################################
 #>
 
-# Chemins par défaut (à modifier si besoin)
-$pathFilms = "CHEMIN VERS VOS FILMS"
-$pathSeries = "CHEMIN VERS VOS SERIES"
-
-# Liste des patterns à supprimer (insensible à la casse)
-$patternsToRemove = @(
-    'FRENCH', 'TRUEFRENCH', 'VFF', 'VF2', 'VFQ', 'VF', 'MULTi', 'TRUE', 'EN', 'Fr',
-    'BluRay', 'BRRip', 'BDRip', 'HDRip', 'HDLight', 'WEB-DL', 'WEBRip', 'TSMD',
-    'x264', 'XviD', 'AC3', 'DTS', 'AAC', 'H264', 'MDXViD', 'SUBFORCED', 'UNRATED', 'DTSHD-MA', 'BDHD',
-    'iNTERNAL', 'PROPER', 'REPACK', 'READNFO', 'EXTENDED', 'DIRECTORS.CUT', 'UNCUT',
-    'PopHD', 'GHT', 'VENUE', 'EXTREME', 'LiHDL', 'FW', 'ShowFr', 'mHDgz', 'T911',
-    'LOST', 'SKRiN', 'Slay3R', 'FUNKKY', 'ZT', 'ACH', 'CaFaRDaX', 'LEGiON', 'FuN',
-    'CARPEDIEM', 'AUTOPSiE', 'STVFRV', 'AViTECH', 'GHZ', 'BONBON', 'LUCKY', 'GZR',
-    'HD', 'Light', 'WEB', 'DL', 'RiP', 'xvid', 'WEBH264',
-    '720p', '1080p', '4K', '2160p'
-)
-
-# Fonction qui nettoie proprement un nom de fichier
+# Fonction pour nettoyer les noms (garde les apostrophes)
 function Clean-Name {
     param([string]$name)
 
-    # 1) Supprime TOUT ce qui est entre crochets inclus [ ... ]
-    $name = [regex]::Replace($name, '\[.*?\]', '')
+    # Liste des tags et mots à retirer (en minuscule)
+    $tags = @(
+        '\bMULTI\b', '\bMULTi\b', '\bVOSTFR\b', '\bVF\b', '\bVO\b', '\bHD\b', '\b720p\b', '\b1080p\b',
+        '\b2160p\b', '\b4K\b', '\bBluRay\b', '\bBRRip\b', '\bWEBRip\b', '\bWEB-DL\b', '\bHDRip\b',
+        '\bx264\b', '\bx265\b', '\bHEVC\b', '\bH\.264\b', '\bH\.265\b', '\bDVDRip\b', '\bDVDScr\b',
+        '\bCAM\b', '\bTS\b', '\bHDTV\b', '\bBDRip\b', '\bPDTV\b', '\bR5\b', '\bLIMITED\b', '\bREMASTERED\b',
+        '\bPROPER\b', '\bSUBFRENCH\b', '\bSUBFR\b', '\bFR-Subs\b', '\bEXTENDED\b', '\bUNRATED\b', '\bTRUEFRENCH\b',
+        '\bFS\b', '\bFRENCH\b', '\bFR\b', '\bWS\b', '\bREADNFO\b', '\bxvid\b', '\bAAC\b', '\bAC3\b', '\bDTS\b',
+        '\bSPARKS\b', '\bYIFY\b', '\bRARBG\b', '\bETRG\b', '\bGANJAMAN\b', '\bGDRIVE\b', '\bNF\b',
+        '\bBluray\b', '\bHDR\b', '\bXviD\b', '\bHDLight\b', '\bMD\b', '\bBD25\b', '\bBD50\b'
+    )
 
-    # 2) Supprime les patterns inutiles dans le reste du nom
-    foreach ($pattern in $patternsToRemove) {
-        $name = $name -replace "(?i)\b$([regex]::Escape($pattern))\b", ''
+    # On remplace tous ces tags par rien, insensible à la casse
+    foreach ($tag in $tags) {
+        $name = [regex]::Replace($name, $tag, '', 'IgnoreCase')
     }
 
-    # 3) Nettoie ponctuation et espaces multiples
-    $name = $name -replace '[_\.]+', ' '
-    $name = $name -replace '\s{2,}', ' '
+    # Remplace underscore, points, tirets par espaces
+    $name = $name -replace '[_\.\-]', ' '
 
-    return $name.Trim()
+    # Supprime espaces multiples
+    $name = $name -replace '\s+', ' '
+
+    # Trim espaces début/fin
+    $name = $name.Trim()
+
+    return $name
 }
 
-# Fonction pour nettoyer les noms de fichiers de films
-function Clean-MovieName {
-    param([string]$name)
-
-    # Nettoyer le nom de base
-    $cleanName = Clean-Name $name
-
-    # Conserver uniquement le nom du film suivi de l'année et de l'extension
-    $cleanName = [regex]::Replace($cleanName, '(?i)(.*)(\s\d{4})', '$1$2')
-
-    return $cleanName.Trim()
-}
-
-# Fonction pour nettoyer les noms de fichiers de séries
-function Clean-SeriesFileName {
-    param([string]$name)
-
-    # Nettoyer le nom de base
-    $cleanName = Clean-Name $name
-
-    # Trouver le motif SXXEXX et conserver uniquement le nom de la série suivi du motif SXXEXX
-    $seasonEpisodePattern = '(?i)(.*?)(S\d{2}E\d{2})'
-    if ($cleanName -match $seasonEpisodePattern) {
-        $cleanName = $matches[1].Trim() + ' ' + $matches[2]
-    }
-
-    return $cleanName.Trim()
-}
-
-# Fonction pour nettoyer les noms de dossiers de séries
-function Clean-SeriesDirectoryName {
-    param([string]$name)
-
-    # Nettoyer le nom de base
-    $cleanName = Clean-Name $name
-
-    # Trouver le motif SXX et conserver uniquement le nom de la série suivi du motif SXX
-    $seasonPattern = '(?i)(.*?)(S\d{2})'
-    if ($cleanName -match $seasonPattern) {
-        $cleanName = $matches[1].Trim() + ' ' + $matches[2]
-    }
-
-    return $cleanName.Trim()
-}
-
-# Fonction pour demander mode et valider
-function Get-Mode {
-    while ($true) {
-        $m = Read-Host "Choisissez le mode : [S]imulation (par défaut) / [T]rue (renommage réel)"
-        if ([string]::IsNullOrWhiteSpace($m) -or $m.ToUpper() -eq 'S') { return 'Simulation' }
-        elseif ($m.ToUpper() -eq 'T') { return 'Renommage' }
-        else { Write-Host "Choix invalide, merci de taper S ou T." -ForegroundColor Yellow }
-    }
-}
-
-# Fonction principale pour traiter les fichiers
+# Fonction principale de traitement
 function Process-Files {
     param(
         [string]$path,
         [string]$label,
-        [string]$mode,
+        [string]$mode, # Simulation ou Renommage
         [ref]$confirmAllRef
     )
 
-    Write-Host "`n=== Traitement des fichiers $label ===" -ForegroundColor Cyan
-
     if (-not (Test-Path $path)) {
-        Write-Host "Dossier introuvable : $path" -ForegroundColor Yellow
+        Write-Warning "$label : Le chemin $path n'existe pas. Ignoré."
         return
     }
+
+    Write-Host "Traitement $label en mode $mode..." -ForegroundColor Cyan
 
     $files = Get-ChildItem -Path $path -File -Recurse
 
-    if ($files.Count -eq 0) {
-        Write-Host "Aucun fichier trouvé dans $label." -ForegroundColor Green
-        return
-    }
-
     foreach ($file in $files) {
-        $cleanBaseName = if ($label -eq "SÉRIES") { Clean-SeriesFileName $file.BaseName } else { Clean-MovieName $file.BaseName }
-        $extension = $file.Extension
-        $newName = "$cleanBaseName$extension"
+        $oldName = $file.Name
+        $dir = $file.DirectoryName
+        $ext = $file.Extension
 
-        # Supprimer tout ce qui est entre la date et l'extension pour les films
-        if ($label -eq "FILMS") {
-            $newName = [regex]::Replace($newName, '(?i)(.+\d{4}).*(?=\.\w+$)', '$1')
+        $cleanBase = Clean-Name ([IO.Path]::GetFileNameWithoutExtension($oldName))
+        if ([string]::IsNullOrWhiteSpace($cleanBase)) {
+            # Si nettoyage vide, on garde le nom original
+            $cleanBase = [IO.Path]::GetFileNameWithoutExtension($oldName)
         }
 
-        Write-Host "[ORIGINAL] $($file.Name)"
-        Write-Host "[PROPOSÉ ] $newName"
+        $newName = $cleanBase + $ext
 
-        if ($mode -eq 'Simulation') {
-            Write-Host "[SIMULATION] Pas de renommage effectué." -ForegroundColor DarkGray
+        if ($oldName -eq $newName) {
+            # Pas de changement
+            continue
         }
-        else {
-            if (-not $confirmAllRef.Value) {
-                $answer = Read-Host "Renommer ce fichier ? [O]ui / [N]on / [A] tout renommer"
-                switch ($answer.ToUpper()) {
-                    'O' {
-                        Rename-Item -LiteralPath $file.FullName -NewName $newName -Force
-                        Write-Host "[RENOMMÉ] $($file.Name) -> $newName" -ForegroundColor Green
-                    }
-                    'N' {
-                        Write-Host "[SAUTÉ] $($file.Name)" -ForegroundColor Yellow
-                    }
-                    'A' {
-                        Rename-Item -LiteralPath $file.FullName -NewName $newName -Force
-                        Write-Host "[RENOMMÉ] $($file.Name) -> $newName" -ForegroundColor Green
-                        $confirmAllRef.Value = $true
-                    }
-                    default {
-                        Write-Host "Réponse non reconnue, fichier ignoré." -ForegroundColor Yellow
-                    }
+
+        Write-Host "Ancien : $oldName"
+        Write-Host "Proposé : $newName"
+
+        if ($mode -eq "Simulation") {
+            Write-Host "[SIMULATION] Pas de renommage effectué." -ForegroundColor Yellow
+            Write-Host ""
+            continue
+        }
+
+        # mode Renommage réel
+        if (-not $confirmAllRef.Value) {
+            $choice = Read-Host "Renommer ? (O=oui, N=non, A=oui à tout)"
+
+            switch ($choice.ToUpper()) {
+                'O' {
+                    Rename-Item -LiteralPath $file.FullName -NewName $newName -Force
+                    Write-Host "[RENOMMÉ]" -ForegroundColor Green
+                }
+                'N' {
+                    Write-Host "Ignoré." -ForegroundColor Gray
+                }
+                'A' {
+                    Rename-Item -LiteralPath $file.FullName -NewName $newName -Force
+                    Write-Host "[RENOMMÉ - TOUT]" -ForegroundColor Green
+                    $confirmAllRef.Value = $true
+                }
+                default {
+                    Write-Warning "Réponse non reconnue, fichier ignoré."
                 }
             }
-            else {
-                Rename-Item -LiteralPath $file.FullName -NewName $newName -Force
-                Write-Host "[RENOMMÉ] $($file.Name) -> $newName" -ForegroundColor Green
-            }
+        }
+        else {
+            Rename-Item -LiteralPath $file.FullName -NewName $newName -Force
+            Write-Host "[RENOMMÉ - TOUT]" -ForegroundColor Green
         }
         Write-Host ""
     }
+
+    Write-Host "Traitement $label terminé." -ForegroundColor Cyan
 }
 
-# Fonction principale pour traiter les dossiers
-function Process-Directories {
-    param(
-        [string]$path,
-        [string]$label,
-        [string]$mode,
-        [ref]$confirmAllRef
-    )
+# --- Script principal ---
 
-    Write-Host "`n=== Traitement des dossiers $label ===" -ForegroundColor Cyan
+Clear-Host
+Write-Host "=== Script de renommage fichiers FILMS et SERIES v3 ===" -ForegroundColor Cyan
 
-    if (-not (Test-Path $path)) {
-        Write-Host "Dossier introuvable : $path" -ForegroundColor Yellow
-        return
-    }
+# Demander les dossiers Films et Séries au démarrage
+$pathFilms = Read-Host "Entrez le chemin complet vers le dossier FILMS"
+$pathSeries = Read-Host "Entrez le chemin complet vers le dossier SERIES"
 
-    $directories = Get-ChildItem -Path $path -Directory -Recurse
-
-    if ($directories.Count -eq 0) {
-        Write-Host "Aucun dossier trouvé dans $label." -ForegroundColor Green
-        return
-    }
-
-    foreach ($directory in $directories) {
-        $cleanBaseName = if ($label -eq "SÉRIES") { Clean-SeriesDirectoryName $directory.Name } else { Clean-MovieName $directory.Name }
-        $newName = $cleanBaseName
-
-        Write-Host "[ORIGINAL] $($directory.Name)"
-        Write-Host "[PROPOSÉ ] $newName"
-
-        if ($mode -eq 'Simulation') {
-            Write-Host "[SIMULATION] Pas de renommage effectué." -ForegroundColor DarkGray
-        }
-        else {
-            if (-not $confirmAllRef.Value) {
-                $answer = Read-Host "Renommer ce dossier ? [O]ui / [N]on / [A] tout renommer"
-                switch ($answer.ToUpper()) {
-                    'O' {
-                        Rename-Item -LiteralPath $directory.FullName -NewName $newName -Force
-                        Write-Host "[RENOMMÉ] $($directory.Name) -> $newName" -ForegroundColor Green
-                    }
-                    'N' {
-                        Write-Host "[SAUTÉ] $($directory.Name)" -ForegroundColor Yellow
-                    }
-                    'A' {
-                        Rename-Item -LiteralPath $directory.FullName -NewName $newName -Force
-                        Write-Host "[RENOMMÉ] $($directory.Name) -> $newName" -ForegroundColor Green
-                        $confirmAllRef.Value = $true
-                    }
-                    default {
-                        Write-Host "Réponse non reconnue, dossier ignoré." -ForegroundColor Yellow
-                    }
-                }
-            }
-            else {
-                Rename-Item -LiteralPath $directory.FullName -NewName $newName -Force
-                Write-Host "[RENOMMÉ] $($directory.Name) -> $newName" -ForegroundColor Green
-            }
-        }
-        Write-Host ""
-    }
-}
-
-# --------- SCRIPT PRINCIPAL ---------
-
-$mode = Get-Mode
-Write-Host "Mode sélectionné : $mode`n"
-
-# Variable pour suivi "tout valider"
+# Variable de confirmation globale
 $confirmAll = $false
 
-# Traitement des fichiers puis des dossiers
-Process-Files -path $pathFilms -label "FILMS" -mode $mode -confirmAllRef ([ref]$confirmAll)
-Process-Files -path $pathSeries -label "SÉRIES" -mode $mode -confirmAllRef ([ref]$confirmAll)
-
-Process-Directories -path $pathFilms -label "FILMS" -mode $mode -confirmAllRef ([ref]$confirmAll)
-Process-Directories -path $pathSeries -label "SÉRIES" -mode $mode -confirmAllRef ([ref]$confirmAll)
-
-# Si mode simulation, proposer renommage automatique
-if ($mode -eq 'Simulation') {
-    $rep = Read-Host "Voulez-vous appliquer automatiquement tous les renommages proposés ? [O]ui / [N]on"
-    if ($rep.ToUpper() -eq 'O') {
-        Write-Host "`n--- Application automatique des renommages en mode réel ---" -ForegroundColor Cyan
-        $confirmAll = $true
-        Process-Files -path $pathFilms -label "FILMS" -mode 'Renommage' -confirmAllRef ([ref]$confirmAll)
-        Process-Files -path $pathSeries -label "SÉRIES" -mode 'Renommage' -confirmAllRef ([ref]$confirmAll)
-        Process-Directories -path $pathFilms -label "FILMS" -mode 'Renommage' -confirmAllRef ([ref]$confirmAll)
-        Process-Directories -path $pathSeries -label "SÉRIES" -mode 'Renommage' -confirmAllRef ([ref]$confirmAll)
-    }
+function Show-Menu {
+    Clear-Host
+    Write-Host "=== MENU ===" -ForegroundColor Cyan
+    Write-Host "1) Simuler renommage des Films"
+    Write-Host "2) Simuler renommage des Séries"
+    Write-Host "3) Simuler renommage des Films et Séries"
+    Write-Host "4) Valider le renommage et renommer Films et Séries"
+    Write-Host "Q) Quitter"
+    Write-Host ""
 }
 
-Write-Host "`nTraitement terminé." -ForegroundColor Cyan
+do {
+    Show-Menu
+    $choice = Read-Host "Choisissez une option"
+
+    switch ($choice.ToUpper()) {
+        '1' {
+            $confirmAll = $false
+            Process-Files -path $pathFilms -label "FILMS" -mode "Simulation" -confirmAllRef ([ref]$confirmAll)
+            Read-Host "Appuyez sur Entrée pour continuer..."
+        }
+        '2' {
+            $confirmAll = $false
+            Process-Files -path $pathSeries -label "SÉRIES" -mode "Simulation" -confirmAllRef ([ref]$confirmAll)
+            Read-Host "Appuyez sur Entrée pour continuer..."
+        }
+        '3' {
+            $confirmAll = $false
+            Process-Files -path $pathFilms -label "FILMS" -mode "Simulation" -confirmAllRef ([ref]$confirmAll)
+            Process-Files -path $pathSeries -label "SÉRIES" -mode "Simulation" -confirmAllRef ([ref]$confirmAll)
+            Read-Host "Appuyez sur Entrée pour continuer..."
+        }
+        '4' {
+            $confirmAll = $false
+            Process-Files -path $pathFilms -label "FILMS" -mode "Renommage" -confirmAllRef ([ref]$confirmAll)
+            Process-Files -path $pathSeries -label "SÉRIES" -mode "Renommage" -confirmAllRef ([ref]$confirmAll)
+            Read-Host "Renommage terminé. Appuyez sur Entrée pour continuer..."
+        }
+        'Q' {
+            Write-Host "Au revoir !" -ForegroundColor Green
+        }
+        default {
+            Write-Warning "Option non reconnue."
+            Read-Host "Appuyez sur Entrée pour continuer..."
+        }
+    }
+} while ($choice.ToUpper() -ne 'Q')
